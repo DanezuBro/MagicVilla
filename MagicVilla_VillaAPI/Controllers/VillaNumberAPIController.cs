@@ -3,6 +3,7 @@ using MagicVilla_VillaAPI.Data;
 using MagicVilla_VillaAPI.Models;
 using MagicVilla_VillaAPI.Models.Dto;
 using MagicVilla_VillaAPI.Repository.IRepository;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
@@ -16,11 +17,13 @@ namespace MagicVilla_VillaAPI.Controllers
     {
         protected APIResponse _response;
         private readonly IVillaNumberRepository _dbVillaNumber;
+        private readonly IVillaRepository _dbVilla;
         private readonly IMapper _mapper;
 
-        public VillaNumberAPIController(IVillaNumberRepository dbVillaNumber, IMapper mapper)
+        public VillaNumberAPIController(IVillaNumberRepository dbVillaNumber, IVillaRepository dbVilla, IMapper mapper)
         {
             _dbVillaNumber = dbVillaNumber;
+            _dbVilla = dbVilla;
             _mapper = mapper;
             this._response = new();
         }
@@ -83,7 +86,6 @@ namespace MagicVilla_VillaAPI.Controllers
         [HttpPost(Name = "CreateVillaNumber")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<APIResponse>> CreateVillaNumber([FromBody] VillaNumberCreateDTO createDTO)
         {
             try
@@ -96,6 +98,16 @@ namespace MagicVilla_VillaAPI.Controllers
                     _response.ErrorMessages.Add("Villa number already exists!");
                     return BadRequest(_response);
                 }
+
+                if(await _dbVilla.GetAsync(v=>v.Id==createDTO.VillaId)==null)
+                {
+                    ModelState.AddModelError("CustomError", "VillaId is invalid!");
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages.Add("VillaId is invalid!");
+                    return BadRequest(_response);
+                }
+
                 if (createDTO == null)
                 {
                     _response.StatusCode = HttpStatusCode.BadRequest;
@@ -112,7 +124,7 @@ namespace MagicVilla_VillaAPI.Controllers
                 _response.IsSuccess = true;
                 _response.StatusCode = HttpStatusCode.Created;
 
-                return CreatedAtRoute("GetVillaNumber", new { id = villaNumber.VillaNo }, _response);
+                return CreatedAtRoute("GetVillaNumber", new { villaNo = villaNumber.VillaNo }, _response);
             }
             catch (Exception ex)
             {
@@ -123,7 +135,6 @@ namespace MagicVilla_VillaAPI.Controllers
         }
 
         [HttpDelete("{villaNo:int}", Name = "DeleteVillaNumber")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<APIResponse>> DeleteVillaNumber(int villaNo)
@@ -159,7 +170,7 @@ namespace MagicVilla_VillaAPI.Controllers
         }
 
         [HttpPut("{villaNo:int}", Name = "UpdateVillaNumber")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<APIResponse>> UpdateVillaNumber(int villaNo, [FromBody] VillaNumberUpdateDTO updateDTO)
         {
@@ -169,6 +180,15 @@ namespace MagicVilla_VillaAPI.Controllers
                 {
                     _response.StatusCode = HttpStatusCode.BadRequest;
                     _response.IsSuccess = false;
+                    return BadRequest(_response);
+                }
+
+                if (await _dbVilla.GetAsync(v => v.Id == updateDTO.VillaId) == null)
+                {
+                    ModelState.AddModelError("CustomError", "VillaId is invalid!");
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages.Add("VillaId is invalid!");
                     return BadRequest(_response);
                 }
 
