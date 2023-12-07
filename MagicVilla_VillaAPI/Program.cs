@@ -20,6 +20,17 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IVillaRepository, VillaRepository>();
 builder.Services.AddScoped<IVillaNumberRepository, VillaNumberRepository>();
 builder.Services.AddAutoMapper(typeof(MappingConfig));
+builder.Services.AddApiVersioning(options => 
+{
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.DefaultApiVersion = new Asp.Versioning.ApiVersion(1, 0);
+    options.ReportApiVersions = true;
+}).AddMvc()
+   .AddApiExplorer(options => 
+   {
+       options.GroupNameFormat = "'v'VVV";
+       options.SubstituteApiVersionInUrl = true;
+   });
 
 var key = builder.Configuration.GetValue<string>("ApiSettings:Secret");
 
@@ -72,6 +83,40 @@ builder.Services.AddSwaggerGen(options =>
             new List<string>()
         }
     });
+    options.SwaggerDoc("v1", new OpenApiInfo 
+    {
+        Version = "v1.0",
+        Title = "Magic Villa V1 - Deprecated",
+        Description = "API to manage villa",
+        TermsOfService = new Uri("https://www.danezubro.com/terms"),
+        Contact = new OpenApiContact 
+                                {
+                                    Name = "DanezuBro",
+                                    Url = new Uri("https://www.danezubro.com/contact")
+                                },
+        License = new OpenApiLicense 
+                                {
+                                    Name = "Example License",
+                                    Url = new Uri("https://www.danezubro.com/license")
+        }
+    });
+    options.SwaggerDoc("v2", new OpenApiInfo
+    {
+        Version = "v2.0",
+        Title = "Magic Villa V2 - New Version",
+        Description = "API to manage villa",
+        TermsOfService = new Uri("https://www.danezubro.com/terms"),
+        Contact = new OpenApiContact
+        {
+            Name = "DanezuBro",
+            Url = new Uri("https://www.danezubro.com/contact")
+        },
+        License = new OpenApiLicense
+        {
+            Name = "Example License",
+            Url = new Uri("https://www.danezubro.com/license")
+        }
+    });
 });
 
 var app = builder.Build();
@@ -80,7 +125,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options => 
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json","Magic_Villa_V1 - deprecated");
+        options.SwaggerEndpoint("/swagger/v2/swagger.json", "Magic_Villa_V2 - new version");
+    });
 }
 
 app.UseHttpsRedirection();

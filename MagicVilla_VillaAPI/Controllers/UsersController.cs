@@ -1,21 +1,23 @@
-﻿using MagicVilla_VillaAPI.Models;
+﻿using Asp.Versioning;
+using MagicVilla_VillaAPI.Models;
 using MagicVilla_VillaAPI.Models.Dto;
 using MagicVilla_VillaAPI.Repository.IRepository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 
-namespace MagicVilla_VillaAPI.Controllers
+namespace MagicVilla_VillaAPI.Controllers.v1
 {
-    [Route("api/UsersAuth")]
+    [Route("api/v{version:apiVersion}/UsersAuth")]
     [ApiController]
+    [ApiVersionNeutral]
     public class UsersController : ControllerBase
     {
         private readonly IUserRepository _userRepo;
         protected APIResponse _response;
         public UsersController(IUserRepository userRepo)
         {
-                _userRepo = userRepo;
+            _userRepo = userRepo;
             _response = new APIResponse();
         }
 
@@ -25,7 +27,7 @@ namespace MagicVilla_VillaAPI.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequestDTO model)
         {
             var loginResponse = await _userRepo.Login(model);
-            if (loginResponse.User==null || string.IsNullOrEmpty(loginResponse.Token))
+            if (loginResponse.User == null || string.IsNullOrEmpty(loginResponse.Token))
             {
                 _response.StatusCode = HttpStatusCode.BadRequest;
                 _response.IsSuccess = false;
@@ -46,7 +48,7 @@ namespace MagicVilla_VillaAPI.Controllers
         {
             bool ifUserNameUnique = _userRepo.IsUniqueUser(model.UserName);
 
-            if(!ifUserNameUnique)
+            if (!ifUserNameUnique)
             {
                 _response.StatusCode = HttpStatusCode.BadRequest;
                 _response.IsSuccess = false;
@@ -55,7 +57,7 @@ namespace MagicVilla_VillaAPI.Controllers
             }
 
             var user = _userRepo.Register(model);
-            if(user==null)
+            if (user == null)
             {
                 _response.StatusCode = HttpStatusCode.BadRequest;
                 _response.IsSuccess = false;
